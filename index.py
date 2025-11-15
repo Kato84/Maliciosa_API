@@ -73,7 +73,7 @@ def Registro():
 	R = False
 	try:
 		with db.cursor() as cursor:
-			cursor.execute(f'insert into Usuario values(null,"{request.json["uname"]}","{request.json["email"]}",md5("{request.json["password"]}"))');
+			cursor.execute('insert into Usuario values(null,%s,%s,md5(%s))',(request.json["uname"], request.json["email"], request.json["password"]))
 			R = cursor.lastrowid
 			db.commit()
 		db.close()
@@ -122,7 +122,7 @@ def Login():
 	try:
 		with db.cursor() as cursor:
 			print(f'Select id from  Usuario where uname ="{request.json["uname"]}" and password = md5("{request.json["password"]}")')
-			cursor.execute(f'Select id from  Usuario where uname ="{request.json["uname"]}" and password = md5("{request.json["password"]}")');
+			cursor.execute('Select id from Usuario where uname = %s and password = md5(%s)',(request.json["uname"], request.json["password"]))
 			R = cursor.fetchall()
 	except Exception as e: 
 		print(e)
@@ -143,8 +143,8 @@ def Login():
 	
 	try:
 		with db.cursor() as cursor:
-			cursor.execute(f'Delete from AccesoToken where id_Usuario = "{R[0][0]}"');
-			cursor.execute(f'insert into AccesoToken values({R[0][0]},"{T}",now())');
+			cursor.execute('Delete from AccesoToken where id_Usuario = %s', (R[0][0],))
+			cursor.execute('insert into AccesoToken values(%s,%s,now())', (R[0][0], T))
 			db.commit()
 			db.close()
 			return {"R":0,"D":T}
@@ -200,7 +200,7 @@ def Imagen():
 	R = False
 	try:
 		with db.cursor() as cursor:
-			cursor.execute(f'select id_Usuario from AccesoToken where token = "{TKN}"');
+			cursor.execute('select id_Usuario from AccesoToken where token = %s', (TKN,))
 			R = cursor.fetchall()
 	except Exception as e: 
 		print(e)
