@@ -8,7 +8,9 @@ from datetime import datetime
 from pathlib import Path
 from bottle import route, run, template, post, request, static_file
 
+from passlib.context import CryptContext
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def loadDatabaseSettings(pathjs):
 	pathjs = Path(pathjs)
@@ -73,7 +75,7 @@ def Registro():
 	R = False
 	try:
 		with db.cursor() as cursor:
-			cursor.execute('insert into Usuario values(null,%s,%s,md5(%s))',(request.json["uname"], request.json["email"], request.json["password"]))
+			cursor.execute('insert into Usuario (id, uname, email, password) values(null,%s,%s,%s)',(request.json["uname"], request.json["email"], hash_pass))
 			R = cursor.lastrowid
 			db.commit()
 		db.close()
@@ -122,7 +124,7 @@ def Login():
 	try:
 		with db.cursor() as cursor:
 			print(f'Select id from  Usuario where uname ="{request.json["uname"]}" and password = md5("{request.json["password"]}")')
-			cursor.execute('Select id from Usuario where uname = %s and password = md5(%s)',(request.json["uname"], request.json["password"]))
+			cursor.execute('Select id, password from Usuario where uname = %s',(request.json["uname"],))
 			R = cursor.fetchall()
 	except Exception as e: 
 		print(e)
@@ -130,9 +132,9 @@ def Login():
 		return {"R":-2}
 	
 	
-	if not R:
-		db.close()
-		return {"R":-3}
+	if not R or not pwd_context.verify(request.json["password"], R[0][1]):
+        db.close()
+        return {"R":-3}
 	
 	T = getToken();
 	#file_put_contents('/tmp/log','insert into AccesoToken values('.R[0].',"'.T.'",now())');
